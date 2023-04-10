@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 using Unity.Mathematics;
 using TMPro;
 
+
 public class GraphHandler : MonoBehaviour
 {   
     #region accessible methods
@@ -27,9 +28,14 @@ public class GraphHandler : MonoBehaviour
         SetCornerValuesInternal(newBottomLeft, newTopRight);
     }
 
+    public void UpdateGraph()
+    {
+        UpdateGraphInternal(UpdateMethod.All);
+    }
+
     private void ExampleFunction()
     {
-        for (float i = 0; i < 20; i += 0.2f)
+        for (float i = 0; i < 50; i += 0.2f)
             CreatePoint(new Vector2(i, Mathf.Sin(i)));
     }
 
@@ -48,6 +54,7 @@ public class GraphHandler : MonoBehaviour
     public List<Vector2> Values{ get {return values; } }
     private List<int> sortedIndices;
     private Vector2Int xAxisRange = new Vector2Int(-1, -1);
+    private Vector2Int prevXAxisRange = new Vector2Int(-1, -1);
     public int activePointIndex = -1;
     private Vector2 activePointValue = Vector2.zero;
     public Vector2 ActivePointValue{ get {return activePointValue; } }
@@ -206,8 +213,24 @@ public class GraphHandler : MonoBehaviour
         if(error)
             return; 
         CheckIfUpdateGraph();
+        //for(int i = xAxisRange.x; i <= xAxisRange.y + 1; i += 2)
+        //{
+        //    if(xAxisRange.x != -1 && xAxisRange.y != -1)
+        //    {
+        //        int index = sortedIndices[i];
+        //        values[index] = new Vector2(values[index].x, Mathf.Sin(Time.time + values[index].x));
+        //    }
+        //}
+        //for(int i = xAxisRange.x + 1; i <= xAxisRange.y; i += 2)
+        //{
+        //    if(xAxisRange.x != -1 && xAxisRange.y != -1)
+        //    {
+        //        int index = sortedIndices[i];
+        //        values[index] = new Vector2(values[index].x, -Mathf.Sin(Time.time + values[index].x));
+        //    }
+        //}
         if(updateGraph)
-            UpdateGraph(UpdateMethod.All);
+            UpdateGraphInternal(UpdateMethod.All);
         
         if(lockedHoveredPoints.Count > 0)
             UpdatePoints();
@@ -257,7 +280,7 @@ public class GraphHandler : MonoBehaviour
         fixedPointIndex = -1;
         SetCornerValues(Vector2.zero, new Vector2(3f, 3f * GS.GraphSize.y / GS.GraphSize.x));
         CreateselectionTypes();
-        UpdateGraph(UpdateMethod.All);
+        UpdateGraphInternal(UpdateMethod.All);
     }
 
     private GameObject CreateParent(string name)
@@ -312,10 +335,8 @@ public class GraphHandler : MonoBehaviour
             new { Type = EventTriggerType.PointerExit, Callback = (Action) (() => MouseTrigger(i, false)) },
             new { Type = EventTriggerType.PointerClick, Callback = (Action) (() => PointClicked(i)) }
         };
-        Debug.Log(trigger);
         foreach (var eventType in eventTypes)
         {
-            Debug.Log(eventType);
             EventTrigger.Entry entry = new EventTrigger.Entry { eventID = eventType.Type };
             entry.callback.AddListener((data) => { eventType.Callback(); });
             trigger.triggers.Add(entry);
@@ -330,7 +351,6 @@ public class GraphHandler : MonoBehaviour
             line.SetActive(false);
         }
         lockedHoveredPoints.Add(i);
-        UpdateGraph(UpdateMethod.All);
         SortIndices();
 
         outline.SetActive(false);
@@ -471,27 +491,27 @@ public class GraphHandler : MonoBehaviour
             {
                 timeToUpdateMouse = GS.updatePeriod;
             }
-            if(Input.touchCount > 0 || timeToUpdateTouch > 0)
+            if(Input.touchCount > 0)
             {
                 timeToUpdateTouch = GS.updatePeriod;
                 
             }
-            if(Input.mouseScrollDelta.y != 0 || timeToUpdateScroll > 0)
+            if(Input.mouseScrollDelta.y != 0)
             {
                 timeToUpdateScroll = GS.updatePeriod;
             }
         }
         if(timeToUpdateMouse > 0)
-            UpdateGraph(UpdateMethod.UpdatePositionAndScale | UpdateMethod.UpdatePointVisuals | UpdateMethod.UpdateContent | UpdateMethod.MouseAction | UpdateMethod.UpdateGridLines);
+            UpdateGraphInternal(UpdateMethod.UpdatePositionAndScale | UpdateMethod.UpdatePointVisuals | UpdateMethod.UpdateContent | UpdateMethod.MouseAction | UpdateMethod.UpdateGridLines);
         if(timeToUpdateTouch > 0)
-            UpdateGraph(UpdateMethod.UpdatePositionAndScale | UpdateMethod.UpdatePointVisuals | UpdateMethod.UpdateContent | UpdateMethod.MouseZoom | UpdateMethod.MouseAction | UpdateMethod.UpdateGridLines);
+            UpdateGraphInternal(UpdateMethod.UpdatePositionAndScale | UpdateMethod.UpdatePointVisuals | UpdateMethod.UpdateContent | UpdateMethod.MouseZoom | UpdateMethod.MouseAction | UpdateMethod.UpdateGridLines);
         if(timeToUpdateScroll > 0)
-            UpdateGraph(UpdateMethod.UpdatePositionAndScale | UpdateMethod.UpdatePointVisuals | UpdateMethod.UpdateContent | UpdateMethod.MouseZoom | UpdateMethod.UpdateGridLines);
+            UpdateGraphInternal(UpdateMethod.UpdatePositionAndScale | UpdateMethod.UpdatePointVisuals | UpdateMethod.UpdateContent | UpdateMethod.MouseZoom | UpdateMethod.UpdateGridLines);
         timeToUpdateMouse -= Time.deltaTime;
         timeToUpdateTouch -= Time.deltaTime;
         timeToUpdateScroll -= Time.deltaTime;
     }
-    public void UpdateGraph(UpdateMethod methodsToUpdate)
+    public void UpdateGraphInternal(UpdateMethod methodsToUpdate)
     {
         if (methodsToUpdate.HasFlag(UpdateMethod.UpdatePositionAndScale) || methodsToUpdate.HasFlag(UpdateMethod.All))
             UpdatePositionAndScale();
@@ -538,7 +558,6 @@ public class GraphHandler : MonoBehaviour
             }
             outlineImages[i].color = GS.OutlineColor;
         }
-        
     }
     private void CalculateCornerValues()
     {
@@ -566,7 +585,6 @@ public class GraphHandler : MonoBehaviour
             {
                 continue;
             }
-            pointOutlines[index].SetActive(true);
             pointOutlineRects[index].anchoredPosition = CalculatePosition(i);
 
             if (lines.Count > 0 && index < lines.Count)
@@ -575,12 +593,10 @@ public class GraphHandler : MonoBehaviour
                 Vector2 point2 = CalculatePosition(index + 1);
                 float distance = Vector2.Distance(point1, point2);
                 lineRects[index].anchoredPosition = (point2 + point1) / 2f;
-                lineRects[index].sizeDelta = new Vector2(distance, GS.LineWidth);
+                UpdateSizeDelta(lineRects[index], new Vector2(distance, GS.LineWidth));
                 Vector2 direction = point2 - point1;
                 float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 lineRects[index].rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-                if (!lines[index].activeSelf)
-                    lines[index].SetActive(true);
 
                 lineImages[index].color = GS.LineColor;
             }
@@ -588,8 +604,9 @@ public class GraphHandler : MonoBehaviour
     }
     private void HandleActiveObjects()
     {
-        if(xAxisRange.x != -1 && xAxisRange.y != -1)
-            for(int i = xAxisRange.x -1; i <= xAxisRange.y; i++)
+        if(prevXAxisRange.x < xAxisRange.x)
+        {
+            for(int i = prevXAxisRange.x - 1; i < xAxisRange.x - 1; i++)
             {
                 if(i < 0)
                     continue;
@@ -597,6 +614,41 @@ public class GraphHandler : MonoBehaviour
                 if(i < lines.Count)
                     lines[sortedIndices[i]].SetActive(false);
             }
+        }
+        else if(prevXAxisRange.x > xAxisRange.x && xAxisRange.x >= 0)
+        {
+            for(int i = xAxisRange.x - 1; i < prevXAxisRange.x; i++)
+            {
+                if(i < 0)
+                    continue;
+                pointOutlines[sortedIndices[i]].SetActive(true);
+                if(i < lines.Count)
+                    lines[sortedIndices[i]].SetActive(true);
+            }
+        }
+        if(prevXAxisRange.y > xAxisRange.y)
+        {
+            for(int i = xAxisRange.y + 1; i <= prevXAxisRange.y + 1; i++)
+            {
+                if(i > pointOutlines.Count - 1 || i < 0)
+                    continue;
+                pointOutlines[sortedIndices[i]].SetActive(false);
+                if(i < lines.Count)
+                    lines[sortedIndices[i]].SetActive(false);
+            }
+        }
+        else if(xAxisRange.y > prevXAxisRange.y)
+        {
+            for(int i = prevXAxisRange.y + 1; i <= xAxisRange.y; i++)
+            {
+                if(i > pointOutlines.Count - 1 || i < 0)
+                    continue;
+                pointOutlines[sortedIndices[i]].SetActive(true);
+                if(i < lines.Count)
+                    lines[sortedIndices[i]].SetActive(true);
+            }
+        }
+        prevXAxisRange = xAxisRange;
         xAxisRange = new Vector2Int(MinMaxBinarySearch(true), MinMaxBinarySearch(false));
     }
     private Vector2 CalculatePosition(int i)
@@ -789,20 +841,20 @@ public class GraphHandler : MonoBehaviour
                 rect.gameObject.SetActive(true);
             if (i == 0)
             {
-                rect.sizeDelta = new Vector2(GS.XAxisWidth, GS.GraphSize.y * 2f);
+                UpdateSizeDelta(rect, new Vector2(GS.XAxisWidth, GS.GraphSize.y * 2f));
                 rectImage.color = GS.XAxisColor;
                 rect.anchoredPosition = new Vector2(0, center.y * contentScale.y);
             }
             else
             {
-                rect.sizeDelta = new Vector2(GS.XGridWidth, GS.GraphSize.y * 2f);
+                UpdateSizeDelta(rect, new Vector2(GS.XGridWidth, GS.GraphSize.y * 2f));
                 rectImage.color = GS.XGridColor;
 
                 if (Mathf.Round(GridStartPoint.x + (i + eventualOverlay.x) / spacing.x * contentScale.x) == 0)
                     eventualOverlay.x = 0;
 
                 rect.anchoredPosition = new Vector2(GridStartPoint.x + (i + eventualOverlay.x) / spacing.x * contentScale.x, center.y * contentScale.y);
-                xAxisTextRects[i - 1].sizeDelta = new Vector2(1f / spacing.x * contentScale.x, GS.XAxisTextSize);
+                UpdateSizeDelta(xAxisTextRects[i - 1], new Vector2(1f / spacing.x * contentScale.x, GS.XAxisTextSize));
                 xAxisTextRects[i - 1].anchoredPosition = new Vector2(0, -center.y * contentScale.y + GS.XAxisTextOffset);
                 xAxisTexts[i - 1].text = Mathf.Floor(1f / spacing.x) > 0 ? Mathf.RoundToInt(GridStartPoint.x / contentScale.x + (i + eventualOverlay.x) / spacing.x).ToString() : (GridStartPoint.x / contentScale.x + (i + eventualOverlay.x) / spacing.x).ToString("R");
             }
@@ -816,20 +868,20 @@ public class GraphHandler : MonoBehaviour
                 rect.gameObject.SetActive(true);
             if (i == 0)
             {
-                rect.sizeDelta = new Vector2(GS.GraphSize.x * 2f, GS.YAxisWidth);
+                UpdateSizeDelta(rect, new Vector2(GS.GraphSize.x * 2f, GS.YAxisWidth));
                 rectImage.color = GS.YAxisColor;
                 rect.anchoredPosition = new Vector2(center.x * contentScale.x, 0);
             }
             else
             {
-                rect.sizeDelta = new Vector2(GS.GraphSize.x * 2f, GS.YGridWidth);
+                UpdateSizeDelta(rect, new Vector2(GS.GraphSize.x * 2f, GS.YGridWidth));
                 rectImage.color = GS.YGridColor;
 
                 if (Mathf.Round(GridStartPoint.y + (i + eventualOverlay.y) / spacing.y * contentScale.y) == 0)
                     eventualOverlay.y = 0;
 
                 rect.anchoredPosition = new Vector2(center.x * contentScale.x, GridStartPoint.y + (i + eventualOverlay.y) / spacing.y * contentScale.y);
-                yAxisTextRects[i - 1].sizeDelta = new Vector2(1f / spacing.x * contentScale.x, GS.XAxisTextSize);
+                UpdateSizeDelta(yAxisTextRects[i - 1], new Vector2(1f / spacing.x * contentScale.x, GS.XAxisTextSize));
                 yAxisTextRects[i - 1].anchoredPosition = new Vector2(-center.x * contentScale.x + GS.YAxisTextOffset, 0);
                 yAxisTexts[i - 1].text = Mathf.Floor(1f / spacing.y) > 0 ? Mathf.RoundToInt(GridStartPoint.y / contentScale.y + (i + eventualOverlay.y) / spacing.y).ToString() : (GridStartPoint.y / contentScale.y + (i + eventualOverlay.y) / spacing.y).ToString("R");
             }
@@ -1096,8 +1148,6 @@ public class GraphHandler : MonoBehaviour
                     }
                     else
                     {
-                        Debug.Log(index);
-                        Debug.Log(lockedPoints.Contains(index));
                         if(lockedPoints.Contains(index))
                             lockedPoints.Remove(index);
                         else
@@ -1183,6 +1233,11 @@ public class GraphHandler : MonoBehaviour
         }
         return -1;
     }
+    private void UpdateSizeDelta(RectTransform rect, Vector2 size)
+    {
+        if(Mathf.Abs(rect.sizeDelta.x - size.x) > 0.1f || Mathf.Abs(rect.sizeDelta.y - size.y) > 0.1f)
+            rect.sizeDelta = size;
+    }
     [Flags]
     public enum UpdateMethod
     {
@@ -1219,5 +1274,3 @@ public class GraphHandler : MonoBehaviour
     }
     #endregion
 }
-
-
