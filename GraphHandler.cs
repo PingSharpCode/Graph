@@ -35,7 +35,7 @@ public class GraphHandler : MonoBehaviour
 
     private void ExampleFunction()
     {
-        for (float i = 0; i < 50; i += 0.2f)
+        for (float i = 0; i < 500; i += 0.2f)
             CreatePoint(new Vector2(i, Mathf.Sin(i)));
     }
 
@@ -585,14 +585,13 @@ public class GraphHandler : MonoBehaviour
             {
                 continue;
             }
-            pointOutlineRects[index].anchoredPosition = CalculatePosition(i);
-
+            UpdateAnchoredPosition(pointOutlineRects[index], CalculatePosition(i));
             if (lines.Count > 0 && index < lines.Count)
             {
                 Vector2 point1 = CalculatePosition(index);
                 Vector2 point2 = CalculatePosition(index + 1);
                 float distance = Vector2.Distance(point1, point2);
-                lineRects[index].anchoredPosition = (point2 + point1) / 2f;
+                UpdateAnchoredPosition(lineRects[index], (point2 + point1) / 2f);
                 UpdateSizeDelta(lineRects[index], new Vector2(distance, GS.LineWidth));
                 Vector2 direction = point2 - point1;
                 float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -843,7 +842,7 @@ public class GraphHandler : MonoBehaviour
             {
                 UpdateSizeDelta(rect, new Vector2(GS.XAxisWidth, GS.GraphSize.y * 2f));
                 rectImage.color = GS.XAxisColor;
-                rect.anchoredPosition = new Vector2(0, center.y * contentScale.y);
+                UpdateAnchoredPosition(rect, new Vector2(0, center.y * contentScale.y));
             }
             else
             {
@@ -853,9 +852,9 @@ public class GraphHandler : MonoBehaviour
                 if (Mathf.Round(GridStartPoint.x + (i + eventualOverlay.x) / spacing.x * contentScale.x) == 0)
                     eventualOverlay.x = 0;
 
-                rect.anchoredPosition = new Vector2(GridStartPoint.x + (i + eventualOverlay.x) / spacing.x * contentScale.x, center.y * contentScale.y);
+                UpdateAnchoredPosition(rect, new Vector2(GridStartPoint.x + (i + eventualOverlay.x) / spacing.x * contentScale.x, center.y * contentScale.y));
                 UpdateSizeDelta(xAxisTextRects[i - 1], new Vector2(1f / spacing.x * contentScale.x, GS.XAxisTextSize));
-                xAxisTextRects[i - 1].anchoredPosition = new Vector2(0, -center.y * contentScale.y + GS.XAxisTextOffset);
+                UpdateAnchoredPosition(xAxisTextRects[i - 1], new Vector2(0, -center.y * contentScale.y + GS.XAxisTextOffset));
                 xAxisTexts[i - 1].text = Mathf.Floor(1f / spacing.x) > 0 ? Mathf.RoundToInt(GridStartPoint.x / contentScale.x + (i + eventualOverlay.x) / spacing.x).ToString() : (GridStartPoint.x / contentScale.x + (i + eventualOverlay.x) / spacing.x).ToString("R");
             }
         }
@@ -870,7 +869,7 @@ public class GraphHandler : MonoBehaviour
             {
                 UpdateSizeDelta(rect, new Vector2(GS.GraphSize.x * 2f, GS.YAxisWidth));
                 rectImage.color = GS.YAxisColor;
-                rect.anchoredPosition = new Vector2(center.x * contentScale.x, 0);
+                UpdateAnchoredPosition(rect, new Vector2(center.x * contentScale.x, 0));
             }
             else
             {
@@ -880,9 +879,9 @@ public class GraphHandler : MonoBehaviour
                 if (Mathf.Round(GridStartPoint.y + (i + eventualOverlay.y) / spacing.y * contentScale.y) == 0)
                     eventualOverlay.y = 0;
 
-                rect.anchoredPosition = new Vector2(center.x * contentScale.x, GridStartPoint.y + (i + eventualOverlay.y) / spacing.y * contentScale.y);
+                UpdateAnchoredPosition(rect, new Vector2(center.x * contentScale.x, GridStartPoint.y + (i + eventualOverlay.y) / spacing.y * contentScale.y));
                 UpdateSizeDelta(yAxisTextRects[i - 1], new Vector2(1f / spacing.x * contentScale.x, GS.XAxisTextSize));
-                yAxisTextRects[i - 1].anchoredPosition = new Vector2(-center.x * contentScale.x + GS.YAxisTextOffset, 0);
+                UpdateAnchoredPosition(yAxisTextRects[i - 1], new Vector2(-center.x * contentScale.x + GS.YAxisTextOffset, 0));
                 yAxisTexts[i - 1].text = Mathf.Floor(1f / spacing.y) > 0 ? Mathf.RoundToInt(GridStartPoint.y / contentScale.y + (i + eventualOverlay.y) / spacing.y).ToString() : (GridStartPoint.y / contentScale.y + (i + eventualOverlay.y) / spacing.y).ToString("R");
             }
         }
@@ -1237,6 +1236,11 @@ public class GraphHandler : MonoBehaviour
     {
         if(Mathf.Abs(rect.sizeDelta.x - size.x) > 0.1f || Mathf.Abs(rect.sizeDelta.y - size.y) > 0.1f)
             rect.sizeDelta = size;
+    }
+    private void UpdateAnchoredPosition(RectTransform rect, Vector2 position)
+    {
+        if(Mathf.Abs(rect.sizeDelta.x - position.x) > 0.1f || Mathf.Abs(rect.sizeDelta.y - position.y) > 0.1f)
+            rect.anchoredPosition = position;
     }
     [Flags]
     public enum UpdateMethod
