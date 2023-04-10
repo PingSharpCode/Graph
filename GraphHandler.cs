@@ -8,8 +8,6 @@ using UnityEngine.EventSystems;
 using Unity.Mathematics;
 using TMPro;
 
-using Random = UnityEngine.Random;
-
 public class GraphHandler : MonoBehaviour
 {   
     #region accessible methods
