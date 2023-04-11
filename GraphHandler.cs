@@ -606,7 +606,7 @@ public class GraphHandler : MonoBehaviour
                 float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 lineRects[index].rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
-                //lineImages[index].color = GS.LineColor;
+                lineImages[index].color = GS.LineColor;
             }
         }
     }
