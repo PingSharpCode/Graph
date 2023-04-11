@@ -9,7 +9,6 @@ public class GraphSettings : MonoBehaviour
 {
     [Header("Graph Settings")]
     [Space]
-
     public int updatePeriod = 5;
     [SerializeField] private Vector2 graphSize = new Vector2(800f, 400f);
     public Vector2 GraphSize
