@@ -34,10 +34,9 @@ public class GraphHandler : MonoBehaviour
 
     private void ExampleFunction()
     {
-        for (float i = 0; i < 500; i += 0.2f)
-            CreatePoint(new Vector2(i, Mathf.Sin(i)));
+        for (float i = 0; i < 50; i += 0.2f)
+            CreatePoint(new Vector2(i, 0.2f * i + Mathf.Sin(i)));
     }
-
     #endregion
 
     #region references
@@ -53,6 +52,7 @@ public class GraphHandler : MonoBehaviour
     public List<Vector2> Values{ get {return values; } }
     private List<int> sortedIndices;
     private Vector2Int xAxisRange = new Vector2Int(-1, -1);
+    public Vector2Int XAxisRange{ get {return xAxisRange; } }
     private Vector2Int prevXAxisRange = new Vector2Int(-1, -1);
     public int activePointIndex = -1;
     private Vector2 activePointValue = Vector2.zero;
@@ -209,25 +209,34 @@ public class GraphHandler : MonoBehaviour
     }
     private void Update()
     {
+        if(Input.GetKey(KeyCode.LeftShift))
+            mouseActionType = MouseActionType.SelectAreaToZoom;
+        else if(Input.GetKey(KeyCode.LeftControl))
+            mouseActionType = MouseActionType.SelectPoints;
+        else
+            mouseActionType = MouseActionType.Move;
         if(error)
             return; 
         CheckIfUpdateGraph();
-        //for(int i = xAxisRange.x; i <= xAxisRange.y + 1; i += 2)
-        //{
-        //    if(xAxisRange.x != -1 && xAxisRange.y != -1)
-        //    {
-        //        int index = sortedIndices[i];
-        //        values[index] = new Vector2(values[index].x, Mathf.Sin(Time.time + values[index].x));
-        //    }
-        //}
-        //for(int i = xAxisRange.x + 1; i <= xAxisRange.y; i += 2)
-        //{
-        //    if(xAxisRange.x != -1 && xAxisRange.y != -1)
-        //    {
-        //        int index = sortedIndices[i];
-        //        values[index] = new Vector2(values[index].x, -Mathf.Sin(Time.time + values[index].x));
-        //    }
-        //}
+        /*
+        for(int i = 0; i <= xAxisRange.y + 1; i += 2)
+        {
+            if(xAxisRange.x != -1 && xAxisRange.y != -1)
+            {
+                int index = sortedIndices[i];
+                values[index] = new Vector2(values[index].x, Mathf.Sin(Time.time / 2f + values[index].x));
+                lineImages[index].color = new Color(1f, Mathf.Sin(Time.time * 2f + values[index].x) / 2f + 0.35f, 0, 1f);
+            }
+        }
+        for(int i = 1; i <= xAxisRange.y; i += 2)
+        {
+            if(xAxisRange.x != -1 && xAxisRange.y != -1)
+            {
+                int index = sortedIndices[i];
+                values[index] = new Vector2(values[index].x, -Mathf.Sin(Time.time / 2f + values[index].x));
+                lineImages[index].color = new Color(1f, Mathf.Sin(Time.time * 2f + values[index].x) / 2f + 0.35f, 0, 1f);
+            }
+        }*/
         if(updateGraph)
             UpdateGraphInternal(UpdateMethod.All);
         
@@ -277,7 +286,7 @@ public class GraphHandler : MonoBehaviour
         outlineParent.transform.SetParent(graph);
         
         fixedPointIndex = -1;
-        SetCornerValues(Vector2.zero, new Vector2(3f, 3f * GS.GraphSize.y / GS.GraphSize.x));
+        //SetCornerValues(Vector2.zero, new Vector2(3f, 3f * GS.GraphSize.y / GS.GraphSize.x));
         CreateselectionTypes();
         UpdateGraphInternal(UpdateMethod.All);
     }
@@ -326,7 +335,7 @@ public class GraphHandler : MonoBehaviour
         pointRectTransform.sizeDelta = Vector2.one * GS.PointRadius;
         pointRects.Add(pointRectTransform);
         image.sprite = GS.PointSprite;
-        //Resources.Load<Sprite>("Graph/Dot");
+
         EventTrigger trigger = point.AddComponent<EventTrigger>();
         var eventTypes = new[]
         {
@@ -345,6 +354,7 @@ public class GraphHandler : MonoBehaviour
             GameObject line = new GameObject("Line");
             line.transform.SetParent(lineParent.transform);
             lineImages.Add(line.AddComponent<Image>());
+            line.GetComponent<Image>().color = GS.LineColor;
             lineRects.Add(line.GetComponent<RectTransform>());
             lines.Add(line);
             line.SetActive(false);
@@ -570,9 +580,9 @@ public class GraphHandler : MonoBehaviour
         if (xAxisRange.x == -1 || xAxisRange.y == -1)
             return;
         Vector2 bounds = new Vector2(bottomLeft.y, topRight.y);
-        for (int i = xAxisRange.x - 1; i <= xAxisRange.y; i++)
+        for (int i = xAxisRange.x - 1; i <= xAxisRange.y + 1; i++)
         {
-            if (i < 0)
+            if (i < 0 || i > sortedIndices.Count - 1)
                 continue;
             int index = sortedIndices[i];
             float currentValue = values[index].y;
@@ -596,7 +606,7 @@ public class GraphHandler : MonoBehaviour
                 float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 lineRects[index].rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
-                lineImages[index].color = GS.LineColor;
+                //lineImages[index].color = GS.LineColor;
             }
         }
     }
@@ -626,7 +636,7 @@ public class GraphHandler : MonoBehaviour
         }
         if(prevXAxisRange.y > xAxisRange.y)
         {
-            for(int i = xAxisRange.y + 1; i <= prevXAxisRange.y + 1; i++)
+            for(int i = xAxisRange.y + 2; i <= prevXAxisRange.y + 2; i++)
             {
                 if(i > pointOutlines.Count - 1 || i < 0)
                     continue;
@@ -637,7 +647,7 @@ public class GraphHandler : MonoBehaviour
         }
         else if(xAxisRange.y > prevXAxisRange.y)
         {
-            for(int i = prevXAxisRange.y + 1; i <= xAxisRange.y; i++)
+            for(int i = prevXAxisRange.y + 2; i <= xAxisRange.y + 1; i++)
             {
                 if(i > pointOutlines.Count - 1 || i < 0)
                     continue;
@@ -1277,3 +1287,5 @@ public class GraphHandler : MonoBehaviour
     }
     #endregion
 }
+
+
