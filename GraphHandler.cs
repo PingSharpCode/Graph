@@ -772,10 +772,9 @@ public class GraphHandler : MonoBehaviour
                 pointRects[numToUpdate].sizeDelta = targetSize;
                 lockedHoveredPoints.RemoveAt(i);
             }
-            else
+            else if(!fixedHoveredPoints.Contains(numToUpdate) && numToUpdate != fixedPointIndex)
             {
-                fixedHoveredPoints.Add(numToUpdate);
-                fixedHoveredPoints = fixedHoveredPoints.Distinct().ToList();
+                pointOutlineRects[numToUpdate].sizeDelta = pointRects[numToUpdate].sizeDelta + Vector2.one * GS.UnfixedPointOutlineWidth;
             }
         }
         UpdatePointOutlines();
