@@ -358,12 +358,13 @@ public class GraphHandler : MonoBehaviour
             line.GetComponent<Image>().color = GS.LineColor;
             lineRects.Add(line.GetComponent<RectTransform>());
             lines.Add(line);
-            line.SetActive(false);
+            if(value.x < bottomLeft.x || value.x > topRight.x)
+                line.SetActive(false);
         }
         lockedHoveredPoints.Add(i);
         SortIndices();
-
-        outline.SetActive(false);
+        if(value.x < bottomLeft.x || value.x > topRight.x)
+            outline.SetActive(false);
     }
 
     private void ChangePointInternal(int index, Vector2 newValue)
