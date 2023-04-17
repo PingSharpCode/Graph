@@ -256,7 +256,9 @@ public class GraphHandler : MonoBehaviour
         }
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.gameObject.AddComponent<GraphicRaycaster>();
-
+        
+        if(GetComponent<RectTransform>() == null)
+            this.gameObject.AddComponent<RectTransform>();    
         graph = this.gameObject.AddComponent<RectTransform>();
         graph.SetParent(canvas.transform);
         graph.anchoredPosition = Vector2.zero;
