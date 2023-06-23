@@ -259,7 +259,7 @@ public class GraphHandler : MonoBehaviour
         
         if(GetComponent<RectTransform>() == null)
             this.gameObject.AddComponent<RectTransform>();    
-        graph = this.gameObject.AddComponent<RectTransform>();
+        graph = this.gameObject.GetComponent<RectTransform>();
         graph.SetParent(canvas.transform);
         graph.anchoredPosition = Vector2.zero;
         graph.sizeDelta = GS.GraphSize;
